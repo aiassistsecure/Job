@@ -63,7 +63,7 @@ console.log(BANNER);
 
 if (!command || command === "help") {
   console.log(`Commands:
-  scan   [--only=Company] [--limit=N] [--verbose]   scan target companies
+  scan   [--free] [--only=Company] [--limit=N]      scan target companies (or global if --free)
   draft  [--limit=N]                                 draft emails (auto-loads resume facts)
   report [--out=./report.pdf]                        generate HITL PDF report
   resume                                             preview extracted resume facts
@@ -81,6 +81,7 @@ if (command === "scan") {
     only:    flags.only ?? null,
     limit:   flags.limit ? Number(flags.limit) : 10,
     verbose: !!flags.verbose,
+    free:    !!flags.free,
   });
 }
 

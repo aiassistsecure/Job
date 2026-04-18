@@ -2,8 +2,9 @@ import yaml from "js-yaml";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { openDb, startRun, finishRun, upsertJob, upsertPerson, getStats } from "./db.mjs";
-import { searchLinkedInJobs, searchIndeedViaNetrows, findHiringManager, findEmail } from "./sources.mjs";
+import { searchLinkedInJobs, searchIndeedViaNetrows, searchUpworkViaNetrows, searchYCViaNetrows, findHiringManager, findEmail } from "./sources.mjs";
 import { loadCompanyContext } from "./company.mjs";
+import { loadResumeFacts } from "./resume.mjs";
 
 const TARGETS_PATH = resolve(process.cwd(), "targets.yaml");
 
@@ -42,16 +43,32 @@ function scoreJob(job, profile) {
   return Math.max(0, Math.min(1, score));
 }
 
-export async function runScan({ only = null, limit = 10, verbose = false } = {}) {
+export async function runScan({ only = null, limit = 10, verbose = false, free = false } = {}) {
   const { targets, profile } = loadTargets();
   const db = openDb();
   const hasNetrows = !!process.env.NETROWS_API_KEY;
+
+  // Auto-augment scoring profile with dynamic resume facts if available
+  try {
+    const facts = await loadResumeFacts();
+    if (facts) {
+      if (facts.skills?.length) {
+        profile.skills = [...new Set([...(profile.skills || []), ...facts.skills])];
+      }
+      if (facts.titles?.length) {
+        profile.target_roles = [...new Set([...(profile.target_roles || []), ...facts.titles])];
+      }
+    }
+  } catch (e) {}
 
   if (!hasNetrows) {
     console.log("  ⚠  NETROWS_API_KEY not set — Netrows searches will be skipped");
   }
 
-  const list = only ? targets.filter(t => t.company.toLowerCase() === only.toLowerCase()) : targets;
+  const list = free 
+    ? [{ company: "FREE_SCAN", domain: null, keywords: profile.target_roles?.slice(0, 5) || ["Engineer"] }]
+    : (only ? targets.filter(t => t.company.toLowerCase() === only.toLowerCase()) : targets);
+
   if (!list.length) {
     console.log(`  No targets matched "${only}"`);
     return;
@@ -71,29 +88,95 @@ export async function runScan({ only = null, limit = 10, verbose = false } = {})
         await loadCompanyContext(target.company, target.domain, { verbose });
       }
 
-      // ── Netrows: LinkedIn Jobs ─────────────────────────────────────────────
-      if (hasNetrows) {
-        process.stdout.write("    [netrows/linkedin_jobs] ");
-        try {
-          const jobs = await searchLinkedInJobs({ company: target.company, roles: target.roles, limit, verbose });
-          process.stdout.write(`${jobs.length} results\n`);
-          allJobs.push(...jobs.map(j => ({ ...j, target_company: target.company })));
-        } catch (e) {
-          process.stdout.write(`error: ${e.message}\n`);
+      if (target.company === "FREE_SCAN") {
+        for (const kw of target.keywords) {
+          if (!hasNetrows) break;
+          process.stdout.write(`    [netrows/linkedin] "${kw}" ... `);
+          try {
+            const jobs = await searchLinkedInJobs({ keywords: kw, company: "FREE_SCAN", limit: limit === 10 ? 30 : limit, verbose });
+            process.stdout.write(`${jobs.length} results\n`);
+            allJobs.push(...jobs.map(j => ({ ...j, target_company: "FREE_SCAN" })));
+          } catch (e) {
+            process.stdout.write(`error: ${e.message}\n`);
+          }
+          
+          process.stdout.write(`    [netrows/indeed] "${kw}" ... `);
+          try {
+            const jobs = await searchIndeedViaNetrows({ keywords: kw, company: "FREE_SCAN", limit: limit === 10 ? 30 : limit, verbose });
+            process.stdout.write(`${jobs.length} results\n`);
+            allJobs.push(...jobs.map(j => ({ ...j, target_company: "FREE_SCAN" })));
+          } catch (e) {
+            process.stdout.write(`error: ${e.message}\n`);
+          }
+
+          process.stdout.write(`    [netrows/upwork] "${kw}" ... `);
+          try {
+            const jobs = await searchUpworkViaNetrows({ keywords: kw, company: "FREE_SCAN", limit: limit === 10 ? 30 : limit, verbose });
+            process.stdout.write(`${jobs.length} results\n`);
+            allJobs.push(...jobs.map(j => ({ ...j, target_company: "FREE_SCAN" })));
+          } catch (e) {
+            process.stdout.write(`error: ${e.message}\n`);
+          }
+
+          process.stdout.write(`    [netrows/yc] "${kw}" ... `);
+          try {
+            const jobs = await searchYCViaNetrows({ keywords: kw, company: "FREE_SCAN", limit: limit === 10 ? 30 : limit, verbose });
+            process.stdout.write(`${jobs.length} results\n`);
+            allJobs.push(...jobs.map(j => ({ ...j, target_company: "FREE_SCAN" })));
+          } catch (e) {
+            process.stdout.write(`error: ${e.message}\n`);
+          }
+        }
+      } else {
+        // ── Netrows: LinkedIn Jobs ─────────────────────────────────────────────
+        if (hasNetrows) {
+          process.stdout.write("    [netrows/linkedin_jobs] ");
+          try {
+            const jobs = await searchLinkedInJobs({ company: target.company, limit: limit === 10 ? 30 : limit, verbose });
+            process.stdout.write(`${jobs.length} results\n`);
+            allJobs.push(...jobs.map(j => ({ ...j, target_company: target.company })));
+          } catch (e) {
+            process.stdout.write(`error: ${e.message}\n`);
+          }
+        }
+
+        // ── Netrows: Indeed Jobs ───────────────────────────────────────────────
+        if (hasNetrows) {
+          process.stdout.write("    [netrows/indeed_jobs] ");
+          try {
+            const jobs = await searchIndeedViaNetrows({ company: target.company, limit: limit === 10 ? 30 : limit, verbose });
+            process.stdout.write(`${jobs.length} results\n`);
+            allJobs.push(...jobs.map(j => ({ ...j, target_company: target.company })));
+          } catch (e) {
+            process.stdout.write(`error: ${e.message}\n`);
+          }
+        }
+
+        // ── Netrows: Upwork Jobs ───────────────────────────────────────────────
+        if (hasNetrows) {
+          process.stdout.write("    [netrows/upwork_jobs] ");
+          try {
+            const jobs = await searchUpworkViaNetrows({ company: target.company, limit: limit === 10 ? 30 : limit, verbose });
+            process.stdout.write(`${jobs.length} results\n`);
+            allJobs.push(...jobs.map(j => ({ ...j, target_company: target.company })));
+          } catch (e) {
+            process.stdout.write(`error: ${e.message}\n`);
+          }
+        }
+
+        // ── Netrows: YC Jobs ───────────────────────────────────────────────────
+        if (hasNetrows) {
+          process.stdout.write("    [netrows/yc_jobs] ");
+          try {
+            const jobs = await searchYCViaNetrows({ company: target.company, limit: limit === 10 ? 30 : limit, verbose });
+            process.stdout.write(`${jobs.length} results\n`);
+            allJobs.push(...jobs.map(j => ({ ...j, target_company: target.company })));
+          } catch (e) {
+            process.stdout.write(`error: ${e.message}\n`);
+          }
         }
       }
 
-      // ── Netrows: Indeed Jobs ───────────────────────────────────────────────
-      if (hasNetrows) {
-        process.stdout.write("    [netrows/indeed_jobs] ");
-        try {
-          const jobs = await searchIndeedViaNetrows({ company: target.company, roles: target.roles, limit, verbose });
-          process.stdout.write(`${jobs.length} results\n`);
-          allJobs.push(...jobs.map(j => ({ ...j, target_company: target.company })));
-        } catch (e) {
-          process.stdout.write(`error: ${e.message}\n`);
-        }
-      }
 
       // ── Score + persist jobs ───────────────────────────────────────────────
       for (const job of allJobs) {
@@ -111,8 +194,8 @@ export async function runScan({ only = null, limit = 10, verbose = false } = {})
         ).all(target.company);
 
         for (const job of shortlisted.slice(0, 3)) {
-          process.stdout.write(`    [people_search] ${job.title} ... `);
-          const person = await findHiringManager({ company: target.company, role: job.title, verbose });
+          process.stdout.write(`    [people_search] ${job.title} at ${job.company} ... `);
+          const person = await findHiringManager({ company: job.company, role: job.title, verbose });
 
           if (!person) { process.stdout.write("no match\n"); continue; }
           process.stdout.write(`found: ${person.name}\n`);

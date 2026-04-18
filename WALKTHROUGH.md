@@ -13,7 +13,7 @@ You need:
 - A copy of your resume as `resume/resume.docx`
 
 ```bash
-cd interchained_job
+cd job
 npm install
 ```
 

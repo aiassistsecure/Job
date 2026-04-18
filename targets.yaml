@@ -12,7 +12,11 @@ targets:
     domain: vercel.com
     roles: [developer advocate, devrel, developer relations, platform engineer]
 
-  - company: Cloudflare
+  - company: Replit
+    domain: replit.com
+    roles: [developer advocate, research, devrel, AI platform, developer, engineer, ai, prompt]
+
+  - company: Cloudflare 
     domain: cloudflare.com
     roles: [developer advocate, devrel, AI platform, developer experience]
 
