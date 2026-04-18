@@ -5,6 +5,7 @@ import { openDb, startRun, finishRun, upsertJob, upsertPerson, getStats } from "
 import { searchLinkedInJobs, searchIndeedViaNetrows, searchUpworkViaNetrows, searchYCViaNetrows, findHiringManager, findEmail } from "./sources.mjs";
 import { loadCompanyContext } from "./company.mjs";
 import { loadResumeFacts } from "./resume.mjs";
+import { generateSearchStrategy } from "./strategy.mjs";
 
 const TARGETS_PATH = resolve(process.cwd(), "targets.yaml");
 
@@ -48,9 +49,10 @@ export async function runScan({ only = null, limit = 10, verbose = false, free =
   const db = openDb();
   const hasNetrows = !!process.env.NETROWS_API_KEY;
 
+  let facts = null;
   // Auto-augment scoring profile with dynamic resume facts if available
   try {
-    const facts = await loadResumeFacts();
+    facts = await loadResumeFacts();
     if (facts) {
       if (facts.skills?.length) {
         profile.skills = [...new Set([...(profile.skills || []), ...facts.skills])];
@@ -65,8 +67,13 @@ export async function runScan({ only = null, limit = 10, verbose = false, free =
     console.log("  ⚠  NETROWS_API_KEY not set — Netrows searches will be skipped");
   }
 
+  let aiStrategy = null;
+  if (free) {
+    aiStrategy = await generateSearchStrategy(facts || { titles: profile.target_roles, skills: profile.skills }, verbose);
+  }
+
   const list = free 
-    ? [{ company: "FREE_SCAN", domain: null, keywords: profile.target_roles?.slice(0, 5) || ["Engineer"] }]
+    ? [{ company: "FREE_SCAN", domain: null, strategy: aiStrategy }]
     : (only ? targets.filter(t => t.company.toLowerCase() === only.toLowerCase()) : targets);
 
   if (!list.length) {
@@ -89,43 +96,46 @@ export async function runScan({ only = null, limit = 10, verbose = false, free =
       }
 
       if (target.company === "FREE_SCAN") {
-        for (const kw of target.keywords) {
-          if (!hasNetrows) break;
+        if (!hasNetrows) break;
+        
+        // ── LinkedIn ──
+        for (const kw of target.strategy.linkedin_queries) {
           process.stdout.write(`    [netrows/linkedin] "${kw}" ... `);
           try {
             const jobs = await searchLinkedInJobs({ keywords: kw, company: "FREE_SCAN", limit: limit === 10 ? 30 : limit, verbose });
             process.stdout.write(`${jobs.length} results\n`);
             allJobs.push(...jobs.map(j => ({ ...j, target_company: "FREE_SCAN" })));
-          } catch (e) {
-            process.stdout.write(`error: ${e.message}\n`);
-          }
-          
+          } catch (e) { process.stdout.write(`error: ${e.message}\n`); }
+        }
+        
+        // ── Indeed ──
+        for (const kw of target.strategy.linkedin_queries) {
           process.stdout.write(`    [netrows/indeed] "${kw}" ... `);
           try {
             const jobs = await searchIndeedViaNetrows({ keywords: kw, company: "FREE_SCAN", limit: limit === 10 ? 30 : limit, verbose });
             process.stdout.write(`${jobs.length} results\n`);
             allJobs.push(...jobs.map(j => ({ ...j, target_company: "FREE_SCAN" })));
-          } catch (e) {
-            process.stdout.write(`error: ${e.message}\n`);
-          }
+          } catch (e) { process.stdout.write(`error: ${e.message}\n`); }
+        }
 
+        // ── Upwork ──
+        for (const kw of target.strategy.upwork_queries) {
           process.stdout.write(`    [netrows/upwork] "${kw}" ... `);
           try {
             const jobs = await searchUpworkViaNetrows({ keywords: kw, company: "FREE_SCAN", limit: limit === 10 ? 30 : limit, verbose });
             process.stdout.write(`${jobs.length} results\n`);
             allJobs.push(...jobs.map(j => ({ ...j, target_company: "FREE_SCAN" })));
-          } catch (e) {
-            process.stdout.write(`error: ${e.message}\n`);
-          }
+          } catch (e) { process.stdout.write(`error: ${e.message}\n`); }
+        }
 
-          process.stdout.write(`    [netrows/yc] "${kw}" ... `);
+        // ── Y Combinator ──
+        for (const tag of target.strategy.yc_tags) {
+          process.stdout.write(`    [netrows/yc] tag: "${tag}" ... `);
           try {
-            const jobs = await searchYCViaNetrows({ keywords: kw, company: "FREE_SCAN", limit: limit === 10 ? 30 : limit, verbose });
+            const jobs = await searchYCViaNetrows({ keywords: tag, company: "FREE_SCAN", limit: limit === 10 ? 30 : limit, verbose });
             process.stdout.write(`${jobs.length} results\n`);
             allJobs.push(...jobs.map(j => ({ ...j, target_company: "FREE_SCAN" })));
-          } catch (e) {
-            process.stdout.write(`error: ${e.message}\n`);
-          }
+          } catch (e) { process.stdout.write(`error: ${e.message}\n`); }
         }
       } else {
         // ── Netrows: LinkedIn Jobs ─────────────────────────────────────────────
@@ -193,7 +203,7 @@ export async function runScan({ only = null, limit = 10, verbose = false, free =
           `SELECT * FROM jobs WHERE target_company=? AND status='new' AND fit_score>=0.6 AND id NOT IN (SELECT job_id FROM people)`
         ).all(target.company);
 
-        for (const job of shortlisted.slice(0, 3)) {
+        for (const job of shortlisted.slice(0, 15)) {
           process.stdout.write(`    [people_search] ${job.title} at ${job.company} ... `);
           const person = await findHiringManager({ company: job.company, role: job.title, verbose });
 

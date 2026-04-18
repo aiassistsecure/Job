@@ -17,6 +17,7 @@ import { openDb, getAllJobs, getStats, getUndraftedJobs, saveDraft, markArchived
 import { runScan } from "./src/scout.mjs";
 import { draftEmail } from "./src/draft.mjs";
 import { generateReport } from "./src/report.mjs";
+import { runEnrich } from "./src/enrich.mjs";
 import { loadResumeFacts, clearResumeCache } from "./src/resume.mjs";
 
 const BANNER = `
@@ -64,6 +65,7 @@ console.log(BANNER);
 if (!command || command === "help") {
   console.log(`Commands:
   scan   [--free] [--only=Company] [--limit=N]      scan target companies (or global if --free)
+  enrich                                             deep scrape links and APIs for high-fidelity data
   draft  [--limit=N]                                 draft emails (auto-loads resume facts)
   report [--out=./report.pdf]                        generate HITL PDF report
   resume                                             preview extracted resume facts
@@ -130,6 +132,11 @@ else if (command === "draft") {
       console.error(`     ✗ draft failed: ${e.message}\n`);
     }
   }
+}
+
+// ── enrich ────────────────────────────────────────────────────────────────────
+else if (command === "enrich") {
+  await runEnrich({ verbose: !!flags.verbose });
 }
 
 // ── report ────────────────────────────────────────────────────────────────────

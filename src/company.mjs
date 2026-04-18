@@ -73,7 +73,7 @@ export async function loadCompanyContext(company, domain, { force = false, verbo
 
 // ─── Page fetcher ─────────────────────────────────────────────────────────────
 
-async function fetchPageText(url, verbose = false) {
+export async function fetchPageText(url, verbose = false) {
   try {
     const res = await fetch(url, {
       headers: {

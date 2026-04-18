@@ -83,10 +83,31 @@ export async function generateReport(db, outPath) {
       // ── Role details ──
       section(doc, "Role");
       doc.fillColor("#374151").font("Helvetica").fontSize(10)
-         .text(truncate(job.description ?? "No description captured.", 600), { width: doc.page.width - 96 });
+         .text(truncate(job.description ?? "No description captured.", 1500), { width: doc.page.width - 96 });
       doc.moveDown(0.3);
       doc.fillColor(BRAND.accent).font("Helvetica").fontSize(9).text(job.url, { link: job.url, underline: true });
       doc.moveDown(0.8);
+
+      let rawData = {};
+      try { rawData = JSON.parse(job.raw || "{}"); } catch(e) {}
+      
+      if (rawData._enriched) {
+        section(doc, "Deep Extraction");
+        if (job.source === "upwork") {
+          const skillsList = Array.isArray(rawData.skills) ? rawData.skills.map(s => typeof s === "string" ? s : s.name).join(", ") : "";
+          if (skillsList) kv(doc, "Stack", truncate(skillsList, 120));
+          if (rawData.client) kv(doc, "Client", `${rawData.client.country} · Rating: ${rawData.client.rating ?? "?"}/5 · Spent: $${rawData.client.totalSpent ?? "?"}`);
+          if (rawData.budget) kv(doc, "Fixed Budget", `$${rawData.budget}`);
+          if (rawData.hourlyBudget) kv(doc, "Hourly Rate", `$${rawData.hourlyBudget.min} - $${rawData.hourlyBudget.max}`);
+        } else if (job.source === "ycombinator") {
+          if (rawData.batch) kv(doc, "Batch", rawData.batch);
+          if (rawData.team_size) kv(doc, "Team Size", String(rawData.team_size));
+        } else if (job.source === "linkedin" || job.source === "indeed") {
+           // We just wanted the massive description payload mostly, but we can flag success
+           kv(doc, "Fidelity", "Full Description Retained natively from API");
+        }
+        doc.moveDown(0.8);
+      }
 
       // ── Hiring manager ──
       section(doc, "Hiring Contact");

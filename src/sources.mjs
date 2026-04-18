@@ -74,6 +74,26 @@ export async function getJobDetails(jobId, verbose = false) {
   }
 }
 
+export async function getIndeedJobDetails(jobKey, verbose = false) {
+  try {
+    const raw = await netrowsGet("/indeed/job-details", { job_key: jobKey }, `indeed_details:${jobKey}`, verbose);
+    return raw;
+  } catch (e) {
+    console.warn(`  [indeed_details] ${e.message}`);
+    return null;
+  }
+}
+
+export async function getUpworkJobDetails(jobId, verbose = false) {
+  try {
+    const raw = await netrowsGet("/upwork/jobs/detail", { id: jobId }, `upwork_details:${jobId}`, verbose);
+    return raw;
+  } catch (e) {
+    console.warn(`  [upwork_details] ${e.message}`);
+    return null;
+  }
+}
+
 // ─── LinkedIn People (hiring manager) ───────────────────────────────────────
 
 export async function findHiringManager({ company, role, limit = 5, verbose = false }) {
@@ -232,11 +252,14 @@ export async function searchYCViaNetrows({ keywords, company = null, limit = 20,
   let raw;
   
   try {
-    raw = await netrowsGet("/ycombinator/search", {
-      query: keywords || company,
+    const params = {
       is_hiring: true,
       per_page: company && company !== "FREE_SCAN" ? 3 : 5
-    }, `yc_search:${keywords || company}`, verbose);
+    };
+    if (company && company !== "FREE_SCAN") params.query = company;
+    else if (keywords) params.tag = keywords;
+
+    raw = await netrowsGet("/ycombinator/search", params, `yc_search:${keywords || company}`, verbose);
   } catch (e) {
     console.warn(`  [netrows/yc] search failed: ${e.message}`);
     return results;
