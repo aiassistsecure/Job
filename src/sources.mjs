@@ -66,7 +66,7 @@ export async function searchLinkedInJobs({ keywords, company = null, limit = 30,
 
 export async function getJobDetails(jobId, verbose = false) {
   try {
-    const raw = await netrowsGet("/jobs/details", { job_id: jobId }, `job_details:${jobId}`, verbose);
+    const raw = await netrowsGet("/jobs/details", { id: jobId }, `job_details:${jobId}`, verbose);
     return raw;
   } catch (e) {
     console.warn(`  [job_details] ${e.message}`);
