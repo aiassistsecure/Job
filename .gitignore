@@ -1,0 +1,29 @@
+# Runtime database — contains job leads, contact emails, draft content
+job.db
+job.db-shm
+job.db-wal
+
+# Company context snapshots — fetched live, not source-controlled
+company_cache/
+
+# Generated PDF reports — review locally, don't commit
+reports/
+
+# Dependencies
+node_modules/
+
+# Environment / secrets
+.env
+.env.local
+.env.*
+
+# Logs
+*.log
+
+# macOS
+.DS_Store
+
+# Replit internals
+.local/
+.replit
+replit.nix

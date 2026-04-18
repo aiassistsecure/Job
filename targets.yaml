@@ -1,0 +1,49 @@
+profile:
+  name: Mark Allen Evans
+  title: Developer Relations / AI Platform Engineer
+  skills: [AI, MCP, APIs, developer ecosystem, DevRel, Node.js, Python, platform engineering]
+  target_roles: [developer advocate, developer relations, devrel, developer experience, DX engineer, platform engineer, AI platform, solutions engineer]
+  seniority: [senior, lead, staff, principal]
+  remote_ok: true
+  deal_breakers: [no sponsorship, on-site only, no remote, intern, internship]
+
+targets:
+  - company: Vercel
+    domain: vercel.com
+    roles: [developer advocate, devrel, developer relations, platform engineer]
+
+  - company: Cloudflare
+    domain: cloudflare.com
+    roles: [developer advocate, devrel, AI platform, developer experience]
+
+  - company: Anthropic
+    domain: anthropic.com
+    roles: [developer relations, developer advocate, solutions engineer]
+
+  - company: Groq
+    domain: groq.com
+    roles: [developer advocate, devrel, developer experience]
+
+  - company: Stripe
+    domain: stripe.com
+    roles: [developer advocate, developer relations, platform engineer]
+
+  - company: Cursor
+    domain: cursor.com
+    roles: [developer advocate, devrel, developer relations]
+
+  - company: Replit
+    domain: replit.com
+    roles: [developer advocate, devrel, AI platform, developer experience]
+
+  - company: Fly.io
+    domain: fly.io
+    roles: [developer advocate, devrel, developer relations]
+
+  - company: Railway
+    domain: railway.app
+    roles: [developer advocate, developer relations, platform]
+
+  - company: Modal
+    domain: modal.com
+    roles: [developer advocate, devrel, AI platform]

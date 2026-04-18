@@ -1,0 +1,28 @@
+{
+  "name": "@interchained/job",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Company-led job scout. Netrows LinkedIn searches, resume-enriched LLM drafts, live company context, PDF HITL reports. No LinkedIn automation.",
+  "author": "Mark Allen Evans <mark@interchained.com> (https://interchained.com)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/interchained/job"
+  },
+  "bin": {
+    "job": "./job.mjs"
+  },
+  "scripts": {
+    "scan": "node job.mjs scan",
+    "draft": "node job.mjs draft",
+    "list": "node job.mjs list",
+    "report": "node job.mjs report",
+    "stats": "node job.mjs stats"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.5.0",
+    "js-yaml": "^4.1.0",
+    "pdfkit": "^0.15.0"
+  }
+}
