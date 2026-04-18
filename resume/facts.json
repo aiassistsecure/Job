@@ -1,0 +1,47 @@
+{
+  "name": "Mark Evans",
+  "current_title": "AI Systems Engineer",
+  "years_experience": 4,
+  "companies": [
+    "AiAssist Secure",
+    "Interchained LLC",
+    "VibeCODE Expo",
+    "World Vapor Expo",
+    "Orlando Vapor Show"
+  ],
+  "titles": [
+    "Founder / AI Systems Engineer",
+    "Systems Architect / Blockchain & Wallet Engineer",
+    "Product Builder / Virtual Experience Systems",
+    "Co-Founder / Operator"
+  ],
+  "skills": [
+    "Python",
+    "PHP",
+    "JavaScript/TypeScript",
+    "C++",
+    "SQL",
+    "Linux",
+    "Redis",
+    "APIs",
+    "Blockchain",
+    "Wallet Development",
+    "AI Engineering"
+  ],
+  "accomplishments": [
+    "Architected a BYOK multi-provider AI platform with routing, governance, and enterprise-style control surfaces spanning 11+ model providers",
+    "Designed secure runtime separation between customer-facing APIs and isolated execution services using signed internal requests, allowlisted access, and auditable actions",
+    "Built agent and app-generation workflows with tool routing, memory-aware interaction patterns, structured execution, and developer-facing API/SDK surfaces",
+    "Shipped named AI products and agent experiences including Journey, angel, Mia, Aria, Browse With Me, and _Gex across research, outreach, browser assistance, and code-editing use cases",
+    "Developed non-custodial wallet functionality, PSBT-based transaction flows, token and wrapping concepts, and operational tooling around balances, deposits, withdrawals, and analytics",
+    "Designed browser-native event and experience platforms with AI concierge concepts, sponsor/exhibitor workflows, role-aware navigation, and real-time product thinking"
+  ],
+  "education": [
+    "Computer Programming & Analysis — Year 2, in progress"
+  ],
+  "links": {
+    "github": "https://github.com/aiassistsecure",
+    "linkedin": null,
+    "portfolio": "https://AiAssist.net"
+  }
+}

@@ -95,8 +95,9 @@ async function extractText() {
 // ─── LLM fact extraction ──────────────────────────────────────────────────────
 
 async function extractFactsViaLLM(rawText) {
-  const systemPrompt = `You are a precise resume parser. Extract structured professional facts.
-Return valid JSON — null or [] for missing fields, never hallucinate:
+  const systemPrompt = `You are a resume parser. Output ONLY a raw JSON object — no explanation, no markdown, no preamble, no trailing text. Start your response with { and end with }.
+
+Schema (use null or [] for missing fields, never hallucinate):
 {
   "name": "Full Name",
   "current_title": "Most recent job title",
@@ -129,7 +130,7 @@ Keep accomplishments concrete: name the thing, what it did, the outcome. Max 6.`
         model: MODEL,
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user",   content: `RESUME:\n\n${rawText.slice(0, 6000)}` },
+          { role: "user",   content: `RESUME:\n\n${rawText.slice(0, 6000)}\n\nRespond with the JSON object only.` },
         ],
         temperature: 0.1,
         response_format: { type: "json_object" },
@@ -139,11 +140,31 @@ Keep accomplishments concrete: name the thing, what it did, the outcome. Max 6.`
     if (!res.ok) throw new Error(`AiAS ${res.status}`);
     const data = await res.json();
     const content = data.choices?.[0]?.message?.content ?? "{}";
-    return JSON.parse(content);
+    return parseJsonSafe(content);
   } catch (e) {
     console.warn(`  [resume] LLM extraction failed (${e.message}) — using heuristic fallback`);
     return fallbackParse(rawText);
   }
+}
+
+// Extract and parse JSON even if the model wraps it in prose or markdown fences.
+function parseJsonSafe(text) {
+  // 1. Try direct parse first (ideal case — model obeyed)
+  try { return JSON.parse(text); } catch {}
+
+  // 2. Strip markdown code fences: ```json ... ```
+  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (fenced) {
+    try { return JSON.parse(fenced[1].trim()); } catch {}
+  }
+
+  // 3. Extract the first {...} block — handles "Here is the JSON: {...}"
+  const braceMatch = text.match(/\{[\s\S]*\}/);
+  if (braceMatch) {
+    try { return JSON.parse(braceMatch[0]); } catch {}
+  }
+
+  throw new Error(`could not extract JSON from model response: ${text.slice(0, 80)}`);
 }
 
 // ─── Heuristic fallback ───────────────────────────────────────────────────────
