@@ -25,22 +25,23 @@ export async function runEnrich({ verbose = false } = {}) {
     
     let fullDescription = job.description;
     let enrichedRaw = null;
+    const rawId = job.id.replace(/^netrows_job:/, "");
     
     try {
-      if (job.source === "linkedin") {
-        const details = await getJobDetails(job.id, verbose);
+      if (job.source === "linkedin" || job.source === "linkedin_jobs") {
+        const details = await getJobDetails(rawId, verbose);
         if (details) {
           fullDescription = details.description ?? details.job_description ?? fullDescription;
           enrichedRaw = details;
         }
       } else if (job.source === "indeed") {
-        const details = await getIndeedJobDetails(job.id, verbose);
+        const details = await getIndeedJobDetails(rawId, verbose);
         if (details) {
           fullDescription = details.description ?? details.job_description ?? fullDescription;
           enrichedRaw = details;
         }
       } else if (job.source === "upwork") {
-        const details = await getUpworkJobDetails(job.id, verbose);
+        const details = await getUpworkJobDetails(rawId, verbose);
         if (details) {
           fullDescription = details.description ?? fullDescription;
           enrichedRaw = details;

@@ -294,7 +294,7 @@ export async function searchYCViaNetrows({ keywords, company = null, limit = 20,
 // ─── Normalisers ─────────────────────────────────────────────────────────────
 
 function normaliseJob(raw, targetCompany, source, _fullRaw) {
-  const id = raw.id ?? raw.job_id ?? String(raw.url ?? "");
+  const id = raw.ciphertext ?? raw.job_key ?? raw.id ?? raw.job_id ?? String(raw.url ?? "");
   const company = raw.company ?? raw.company_name ?? {};
   const companyName = typeof company === "object"
     ? (company.name ?? company.title ?? targetCompany)
