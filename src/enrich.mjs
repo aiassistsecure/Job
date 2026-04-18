@@ -31,14 +31,14 @@ export async function runEnrich({ verbose = false } = {}) {
       if (job.source === "linkedin" || job.source === "linkedin_jobs") {
         const details = await getJobDetails(rawId, verbose);
         if (details) {
-          fullDescription = details.description ?? details.job_description ?? fullDescription;
-          enrichedRaw = details;
+          fullDescription = details.data?.description ?? details.data?.job_description ?? details.description ?? details.job_description ?? fullDescription;
+          enrichedRaw = details.data || details;
         }
       } else if (job.source === "indeed") {
         const details = await getIndeedJobDetails(rawId, verbose);
         if (details) {
-          fullDescription = details.description ?? details.job_description ?? fullDescription;
-          enrichedRaw = details;
+          fullDescription = details.data?.description ?? details.data?.job_description ?? details.description ?? details.job_description ?? fullDescription;
+          enrichedRaw = details.data || details;
         }
       } else if (job.source === "upwork") {
         const details = await getUpworkJobDetails(rawId, verbose);
