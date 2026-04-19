@@ -52,9 +52,9 @@ function loadProfile() {
 
 function fmtStatus(s) {
   return {
-    new:      "\x1b[32m   NEW\x1b[0m",
-    drafted:  "\x1b[33mDRAFTED\x1b[0m",
-    sent:     "\x1b[34m  SENT\x1b[0m",
+    new: "\x1b[32m   NEW\x1b[0m",
+    drafted: "\x1b[33mDRAFTED\x1b[0m",
+    sent: "\x1b[34m  SENT\x1b[0m",
     archived: "\x1b[90mARCHIV\x1b[0m",
   }[s] ?? s;
 }
@@ -81,10 +81,10 @@ if (!command || command === "help") {
 // ── scan ──────────────────────────────────────────────────────────────────────
 if (command === "scan") {
   await runScan({
-    only:    flags.only ?? null,
-    limit:   flags.limit ? Number(flags.limit) : 10,
+    only: flags.only ?? null,
+    limit: flags.limit ? Number(flags.limit) : 10,
     verbose: !!flags.verbose,
-    free:    !!flags.free,
+    free: !!flags.free,
   });
 }
 
@@ -113,18 +113,18 @@ else if (command === "draft") {
       const draft = await draftEmail({
         job,
         person: {
-          name:     job.person_name,
-          email:    job.person_email,
+          name: job.person_name,
+          email: job.person_email,
           headline: job.person_headline,
           linkedin_url: job.person_linkedin,
         },
         profile,
       });
       saveDraft(db, {
-        job_id:    job.id,
+        job_id: job.id,
         person_id: null,
-        subject:   draft.subject,
-        body:      draft.body,
+        subject: draft.subject,
+        body: draft.body,
       });
       console.log(`     Subject: ${draft.subject}`);
       console.log(`     ─────────────────────`);
@@ -142,12 +142,14 @@ else if (command === "enrich") {
 
 // ── add ───────────────────────────────────────────────────────────────────────
 else if (command === "add") {
-  const url = process.argv[3];
-  if (!url) {
-    console.log("  ✗ Usage: node job.mjs add <url>");
+  const urls = process.argv.slice(3).filter(a => !a.startsWith('--'));
+  if (urls.length === 0) {
+    console.log("  ✗ Usage: node job.mjs add <url1> [url2] ...");
     process.exit(1);
   }
-  await addJobLink(url, !!flags.verbose);
+  for (const url of urls) {
+    await addJobLink(url, !!flags.verbose);
+  }
 }
 
 // ── report ────────────────────────────────────────────────────────────────────
@@ -174,17 +176,17 @@ else if (command === "resume") {
     console.log("  No resume found. Drop your resume.docx into the resume/ directory.\n");
   } else {
     console.log("\n  ── Resume Facts ─────────────────────────────────────────");
-    if (facts.name)              console.log(`  Name:         ${facts.name}`);
-    if (facts.current_title)     console.log(`  Title:        ${facts.current_title}`);
-    if (facts.years_experience)  console.log(`  Experience:   ${facts.years_experience} years`);
+    if (facts.name) console.log(`  Name:         ${facts.name}`);
+    if (facts.current_title) console.log(`  Title:        ${facts.current_title}`);
+    if (facts.years_experience) console.log(`  Experience:   ${facts.years_experience} years`);
     if (facts.companies?.length) console.log(`  Companies:    ${facts.companies.join(", ")}`);
-    if (facts.skills?.length)    console.log(`  Skills:       ${facts.skills.join(", ")}`);
+    if (facts.skills?.length) console.log(`  Skills:       ${facts.skills.join(", ")}`);
     if (facts.accomplishments?.length) {
       console.log(`  Accomplishments:`);
-      facts.accomplishments.forEach((a, i) => console.log(`    ${i+1}. ${a}`));
+      facts.accomplishments.forEach((a, i) => console.log(`    ${i + 1}. ${a}`));
     }
-    if (facts.links?.github)     console.log(`  GitHub:       ${facts.links.github}`);
-    if (facts.links?.linkedin)   console.log(`  LinkedIn:     ${facts.links.linkedin}`);
+    if (facts.links?.github) console.log(`  GitHub:       ${facts.links.github}`);
+    if (facts.links?.linkedin) console.log(`  LinkedIn:     ${facts.links.linkedin}`);
     if (facts.education?.length) console.log(`  Education:    ${facts.education.join("; ")}`);
     console.log();
   }
