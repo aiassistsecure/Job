@@ -80,6 +80,29 @@ export async function loadCompanyContext(company, domain, jobUrl = null, { force
 // ─── Page fetcher ─────────────────────────────────────────────────────────────
 
 export async function fetchPageText(url, verbose = false) {
+  // "Visit URL strategy": use AiAS deep extraction deep-link if available to bypass Cloudflare natively
+  if (process.env.AIAS_API_KEY) {
+    try {
+      const aiasRes = await fetch(`${AIAS_BASE}/v1/web/extract`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${process.env.AIAS_API_KEY}`
+        },
+        body: JSON.stringify({ url, use_browser: true })
+      });
+      if (aiasRes.ok) {
+        const data = await aiasRes.json();
+        if (data.success && data.content) {
+          if (verbose) console.log(`  [AiAS:extract] ${data.content.length} chars extracted natively from ${url}`);
+          return data.content;
+        }
+      }
+    } catch (e) {
+      if (verbose) console.warn(`  [AiAS:extract] failed, falling back to primitive fetch...`);
+    }
+  }
+
   try {
     const res = await fetch(url, {
       headers: {
