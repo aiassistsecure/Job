@@ -16,9 +16,10 @@ import { resolve } from "node:path";
 import { openDb, getAllJobs, getStats, getUndraftedJobs, saveDraft, markArchived } from "./src/db.mjs";
 import { runScan } from "./src/scout.mjs";
 import { draftEmail } from "./src/draft.mjs";
-import { generateReport } from "./src/report.mjs";
 import { runEnrich } from "./src/enrich.mjs";
+import { addJobLink } from "./src/add.mjs";
 import { loadResumeFacts, clearResumeCache } from "./src/resume.mjs";
+import { generateReport } from "./src/report.mjs";
 
 const BANNER = `
 \x1b[36m════════════════════════════════════════════════════════════
@@ -139,6 +140,16 @@ else if (command === "enrich") {
   await runEnrich({ verbose: !!flags.verbose });
 }
 
+// ── add ───────────────────────────────────────────────────────────────────────
+else if (command === "add") {
+  const url = process.argv[3];
+  if (!url) {
+    console.log("  ✗ Usage: node job.mjs add <url>");
+    process.exit(1);
+  }
+  await addJobLink(url, !!flags.verbose);
+}
+
 // ── report ────────────────────────────────────────────────────────────────────
 else if (command === "report") {
   const db = openDb();
@@ -148,9 +159,6 @@ else if (command === "report") {
   if (written) {
     console.log(`  ✓ Report written: ${written}`);
     console.log(`  Open it, review each lead, and check the action boxes.\n`);
-    // Mark all drafted jobs as exported so they won't appear in the next report
-    db.prepare(`UPDATE jobs SET status='sent' WHERE status='drafted'`).run();
-    console.log(`  Drafted jobs marked as sent — they won't re-appear in future reports.`);
   }
   console.log();
 }
