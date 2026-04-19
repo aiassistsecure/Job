@@ -6,16 +6,17 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { resolve } from "node:path";
 
-const CACHE_DIR  = resolve(process.cwd(), "company_cache");
-const CACHE_TTL  = 24 * 60 * 60 * 1000; // 24 hours
+const CACHE_DIR = resolve(process.cwd(), "company_cache");
+const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
 
-const AIAS_BASE  = process.env.AIAS_API_BASE_URL ?? "https://api.aiassist.net";
-const PROVIDER   = process.env.AIAS_PROVIDER ?? "groq";
-const MODEL      = process.env.AIAS_MODEL ?? "llama-3.3-70b-versatile";
+const AIAS_BASE = process.env.AIAS_API_BASE_URL ?? "https://api.aiassist.net";
+const PROVIDER = process.env.AIAS_PROVIDER ?? "groq";
+const MODEL = process.env.AIAS_MODEL ?? "llama-3.3-70b-versatile";
 
 // ─── Public API ───────────────────────────────────────────────────────────────
 
-export async function loadCompanyContext(company, domain, { force = false, verbose = false } = {}) {
+export async function loadCompanyContext(company, domain, jobUrl = null, { force = false, verbose = false } = {}) {
+  if (!domain && !jobUrl) return null;
   if (!existsSync(CACHE_DIR)) mkdirSync(CACHE_DIR, { recursive: true });
 
   const slug = company.toLowerCase().replace(/[^a-z0-9]/g, "_");
@@ -27,23 +28,28 @@ export async function loadCompanyContext(company, domain, { force = false, verbo
       const cached = JSON.parse(readFileSync(cachePath, "utf8"));
       const age = Date.now() - (cached.fetched_at ?? 0);
       if (age < CACHE_TTL) {
-        if (verbose) console.log(`  [company:${company}] using cached context (${Math.round(age/3600000)}h old)`);
+        if (verbose) console.log(`  [company:${company}] using cached context (${Math.round(age / 3600000)}h old)`);
         return cached;
       }
-    } catch {}
+    } catch { }
   }
 
-  process.stdout.write(`  [company:${company}] fetching context from ${domain}...\n`);
+  process.stdout.write(`  [company:${company}] fetching context from ${domain || "job post URL"}...\n`);
 
-  const urls = [
-    `https://${domain}`,
-    `https://${domain}/blog`,
-    `https://${domain}/about`,
-    `https://${domain}/careers`,
-  ];
+  let urls = [];
+  if (domain && typeof domain === "string") {
+    urls = [
+      `https://${domain}`,
+      `https://${domain}/blog`,
+      `https://${domain}/about`,
+      `https://${domain}/careers`,
+    ];
+  } else if (jobUrl) {
+    urls = [jobUrl];
+  }
 
   const snippets = [];
-  for (const url of urls.slice(0, 2)) { // fetch main + blog, enough for context
+  for (const url of urls) { // fetch main + blog, enough for context
     const text = await fetchPageText(url, verbose);
     if (text) snippets.push({ url, text: text.slice(0, 1200) });
   }

@@ -135,7 +135,7 @@ export function getUndraftedJobs(db, limit = 20) {
            p.linkedin_url as person_linkedin, p.headline as person_headline
     FROM jobs j
     LEFT JOIN people p ON p.job_id = j.id
-    WHERE j.status = 'new' AND p.email IS NOT NULL
+    WHERE j.status = 'new'
     ORDER BY j.fit_score DESC, j.captured_at DESC LIMIT ?
   `).all(limit);
 }

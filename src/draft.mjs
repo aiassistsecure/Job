@@ -30,6 +30,7 @@ export async function draftEmail({ job, person, profile }) {
   const companyCtx = await loadCompanyContext(
     companyName,
     job.domain ?? profile.targets?.find(t => t.company === companyName)?.domain ?? null,
+    job.url,
     { verbose: false }
   );
 
@@ -97,8 +98,9 @@ ${candidateContext}`;
 
   const data = await res.json();
   const content = data.choices?.[0]?.message?.content ?? "{}";
+  const rawJson = content.replace(/^```(json)?\s*/i, "").replace(/```\s*$/, "").trim();
   try {
-    return JSON.parse(content);
+    return JSON.parse(rawJson);
   } catch {
     return {
       subject: `Re: ${job.title} at ${job.company ?? job.target_company}`,

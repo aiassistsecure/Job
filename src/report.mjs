@@ -125,13 +125,26 @@ export async function generateReport(db, outPath) {
       // ── Draft email ──
       section(doc, "Draft Email");
       if (job.draft_subject) {
+        let printSubject = job.draft_subject;
+        let printBody = job.draft_body ?? "";
+
+        // Auto-fix broken markdown JSON blocks stored in the DB
+        try {
+          const cleaned = printBody.replace(/^```(json)?\s*/i, "").replace(/```\s*$/, "").trim();
+          if (cleaned.startsWith("{") && cleaned.endsWith("}")) {
+            const parsed = JSON.parse(cleaned);
+            if (parsed.subject) printSubject = parsed.subject;
+            if (parsed.body) printBody = parsed.body;
+          }
+        } catch (e) {}
+
         doc.fillColor(BRAND.primary).font("Helvetica-Bold").fontSize(10)
-           .text(`Subject: ${job.draft_subject}`);
+           .text(printSubject.startsWith("Subject:") ? printSubject : `Subject: ${printSubject}`);
         doc.moveDown(0.3);
         doc.roundedRect(48, doc.y, doc.page.width - 96, 1, 0).fill(BRAND.light);
         doc.moveDown(0.5);
         doc.fillColor("#1f2937").font("Helvetica").fontSize(10)
-           .text(job.draft_body ?? "", { width: doc.page.width - 96 });
+           .text(printBody, { width: doc.page.width - 96 });
       } else {
         doc.fillColor(BRAND.muted).font("Helvetica-Oblique").fontSize(10)
            .text("No draft yet — run `node job.mjs draft` to generate.");
