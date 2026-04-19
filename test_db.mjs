@@ -1,3 +1,4 @@
 import { openDb } from "./src/db.mjs";
 const db = openDb();
-console.log(db.prepare("SELECT * FROM jobs WHERE id='netrows_job:85602'").get());
+const jobs = db.prepare("SELECT id, title, company, description, raw FROM jobs ORDER BY captured_at DESC LIMIT 3").all();
+console.log(JSON.stringify(jobs, null, 2));

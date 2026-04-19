@@ -22,7 +22,9 @@ export async function generateReport(db, outPath) {
            d.id          AS draft_id
     FROM jobs j
     LEFT JOIN people p ON p.job_id = j.id
-    LEFT JOIN drafts d ON d.job_id = j.id
+    LEFT JOIN drafts d ON d.id = (
+      SELECT id FROM drafts WHERE job_id = j.id ORDER BY created_at DESC LIMIT 1
+    )
     WHERE j.status IN ('new','drafted')
     ORDER BY j.fit_score DESC, j.captured_at DESC
   `).all();
